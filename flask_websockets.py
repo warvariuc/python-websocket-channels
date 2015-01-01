@@ -32,7 +32,7 @@ class SocketMiddleware(object):
             try:
                 endpoint, view_args = url_adapter.match()
             except HTTPException as exc:
-                ws.close()  # it would ne good to not accept connection at all
+                ws.close()  # it would be good to not accept connection at all
                 return exc(environ, start_response)
 
             view_func = self.view_functions[endpoint]

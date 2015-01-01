@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Python Websockets Chat Demo</title>
+  </head>
+  <body>
+    <a href="/">Home</a>
+    <h1>Welcome to channel "{{ channel }}"</h1>
+    <form id="input-form">
+      <input id="input-handle" type="text" placeholder="Enter your name" autofocus />
+      <input id="input-text" type="text" placeholder="Enter chat text here!" autofocus />
+      <button type="submit">Send</button>
+    </form>
+    <h1>Chat Log</h1>
+    <div id="chat-text"></div>
+
+    <script type="text/javascript" src="//code.jquery.com/jquery-2.0.3.min.js"></script>
+    <script type="text/javascript" src="static/reconnecting-websocket.js"></script>
+    <script type="text/javascript">
+var socket = new ReconnectingWebSocket("ws://"+ location.host + "/{{ channel }}");
+
+socket.onmessage = function(message) {
+    var data = JSON.parse(message.data);
+    $("#chat-text").append("<div>" + data.handle + ": " + data.text + "</div>");
+};
+
+socket.onclose = function(){
+    console.log('socket connection closed');
+    this.socket = new WebSocket(socket.url);
+
+};
+
+$("#input-form").on("submit", function(event) {
+    event.preventDefault();
+    var handle = $("#input-handle").val();
+    var text   = $("#input-text").val();
+    socket.send(JSON.stringify({ handle: handle, text: text }));
+    $("#input-text").val("");
+});
+    </script>
+  </body>
+</html>

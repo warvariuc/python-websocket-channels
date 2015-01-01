@@ -11,3 +11,8 @@ The middleware was refactored to allow URL to include variable parts.
 
 It uses Redis Pub/Sub subsystem to ensure that all connected clients recieve the message, 
 even if there are several Gunicorn workers.
+
+
+Running the server::
+
+    gunicorn chat:app --config=gunicorn_settings.py
