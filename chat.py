@@ -28,14 +28,14 @@ def chat(channel):
 
 
 @websockets.route('/<channel>')
-def channel(ws, channel):
+def channel(websocket, channel):
     """Receive chat messages the client wants to send to others.
     The message is PUBLISHed so the SUBSCIRBEd clients can receive it.
     """
-    websockets.subscribe_client(ws, channel)
-    while not ws.closed:
+    websockets.subscribe_client(websocket, channel)
+    while not websocket.closed:
         gevent.sleep(0.1)  # switch to send messages
 
-        message = ws.receive()
+        message = websocket.receive()
         if message:
             websockets.publish_message(message, channel)

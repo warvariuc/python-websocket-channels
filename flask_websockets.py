@@ -39,22 +39,22 @@ class WebSocketMiddleware(object):
         return decorator
 
     def __call__(self, environ, start_response):
-        ws = environ.get('wsgi.websocket')
-        if ws is not None:
+        websocket = environ.get('wsgi.websocket')
+        if websocket is not None:
             url_adapter = self.url_map.bind_to_environ(environ)
             try:
                 endpoint, view_args = url_adapter.match()
             except HTTPException as exc:
-                ws.close()  # it would be good to not accept connection at all
+                websocket.close()  # it would be good to not accept connection at all
                 return exc(environ, start_response)
 
             view_func = self.view_functions[endpoint]
-            view_func(ws, **view_args)
+            view_func(websocket, **view_args)
         else:
             return self.app(environ, start_response)
 
-    def subscribe_client(self, ws, channel):
-        self.pubsub.subscribe_client(ws, channel)
+    def subscribe_client(self, websocket, channel):
+        self.pubsub.subscribe_client(websocket, channel)
 
     def publish_message(self, message, channel):
         self.pubsub.publish_message(message, channel)
@@ -83,30 +83,29 @@ class RedisPubSubBackend(object):
         self.sockets = defaultdict(set)  # {channel: set([websocket, ...]), ...}
 
     @async
-    def subscribe_client(self, ws, channel):
+    def subscribe_client(self, websocket, channel):
         """Asynchronosuly subscribe a client to published messages.
 
         Args:
-            ws (WebSocket): client websocket
+            websocket (WebSocket): client websocket
             channel (str): from which channel
         """
-        # self.pubsub.subscribe(self.CHANNEL_PREFIX + channel)
-        self.sockets[channel].add(ws)
+        self.sockets[channel].add(websocket)
 
     @async
-    def send_message(self, ws, message, channel):
+    def send_message(self, websocket, message, channel):
         """Asynchronosuly send a message to a websocket client.
-        Automatically discards invalid connections.
+        Automatically discard invalid connections.
 
         Args:
-            ws (WebSocket): client websocket
+            websocket (WebSocket): client websocket
             message (str): message to send
             channel (str): from which channel
         """
         try:
-            ws.send(message)
+            websocket.send(message)
         except geventwebsocket.WebSocketError:
-            self.sockets[channel].remove(ws)
+            self.sockets[channel].remove(websocket)
 
     @async
     def publish_message(self, message, channel):
@@ -115,7 +114,7 @@ class RedisPubSubBackend(object):
 
     @async
     def run(self):
-        """Listens for new messages in Redis, and sends them to clients.
+        """Listen for new messages in Redis, and send them to clients.
         """
         self.pubsub.psubscribe(self.CHANNEL_PREFIX + '*')  # listen to all channels
         channel_prefix_len = len(self.CHANNEL_PREFIX)
@@ -128,8 +127,8 @@ class RedisPubSubBackend(object):
             channel = message['channel'][channel_prefix_len:]
             self.app.logger.info(u'Sending message to clients on channel %s: %s',
                                  channel, _message)
-            for ws in self.sockets[channel]:
-                self.send_message(ws, _message, channel)
+            for websocket in self.sockets[channel]:
+                self.send_message(websocket, _message, channel)
 
 
 def create_websockets_app(app, redis_client):
