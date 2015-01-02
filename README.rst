@@ -9,8 +9,9 @@ The dependencies were updated and the code was simplified as possible.
 
 The middleware was refactored to allow URL to include variable parts.
 
-It uses Redis Pub/Sub subsystem to ensure that all connected clients recieve the message, 
-even if there are several Gunicorn workers.
+It uses `Redis Pub/Sub subsystem <https://github.com/andymccurdy/redis-py#publish--subscribe>`_
+to ensure that all connected clients recieve the message, even if there are several Gunicorn
+workers.
 
 
 Running the server::

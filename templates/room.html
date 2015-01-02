@@ -5,7 +5,7 @@
   </head>
   <body>
     <a href="/">Home</a>
-    <h1>Welcome to channel "{{ channel }}"</h1>
+    <h1>Welcome to room "{{ channel }}"</h1>
     <form id="input-form">
       <input id="input-handle" type="text" placeholder="Enter your name" autofocus />
       <input id="input-text" type="text" placeholder="Enter chat text here!" autofocus />
@@ -17,6 +17,7 @@
     <script type="text/javascript" src="//code.jquery.com/jquery-2.0.3.min.js"></script>
     <script type="text/javascript" src="static/reconnecting-websocket.js"></script>
     <script type="text/javascript">
+
 var socket = new ReconnectingWebSocket("ws://"+ location.host + "/{{ channel }}");
 
 socket.onmessage = function(message) {
@@ -37,6 +38,7 @@ $("#input-form").on("submit", function(event) {
     socket.send(JSON.stringify({ handle: handle, text: text }));
     $("#input-text").val("");
 });
+
     </script>
   </body>
 </html>
