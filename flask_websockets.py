@@ -5,7 +5,7 @@ from werkzeug.routing import Map, Rule
 from werkzeug.exceptions import HTTPException
 
 
-class SocketMiddleware(object):
+class WebSocketMiddleware(object):
 
     def __init__(self, wsgi_app):
         self.app = wsgi_app
@@ -41,8 +41,8 @@ class SocketMiddleware(object):
             return self.app(environ, start_response)
 
 
-def WebSockets(app):
-    middleware = SocketMiddleware(app.wsgi_app)
+def create_websockets_app(app):
+    middleware = WebSocketMiddleware(app.wsgi_app)
     app.wsgi_app = middleware
     return middleware
 

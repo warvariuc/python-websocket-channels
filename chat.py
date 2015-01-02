@@ -18,15 +18,14 @@ import flask_websockets
 REDIS_URL = 'redis://127.0.0.1:6379/0'
 
 app = flask.Flask(__name__)
-
-websockets = flask_websockets.WebSockets(app)
+websockets = flask_websockets.create_websockets_app(app)
 redis_client = redis.from_url(REDIS_URL)
 
 
 class ChatBackend(object):
     """Interface for registering and updating WebSocket clients.
     """
-    def __init__(self):
+    def __init__(self, redis_client):
         self.sockets = defaultdict(set)  # {channel: set([web-sockets]), ...}
         self.pubsub = redis_client.pubsub()
         self.pubsub.psubscribe('*')
@@ -65,7 +64,7 @@ class ChatBackend(object):
         gevent.spawn(self._run)
 
 
-chats = ChatBackend()
+chats = ChatBackend(redis_client)
 chats.run()
 
 
