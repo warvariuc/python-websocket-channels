@@ -14,6 +14,7 @@ from werkzeug.exceptions import HTTPException
 
 class Worker(geventwebsocket.gunicorn.workers.GeventWebSocketWorker):
     """The worker used here.
+    TODO: https://github.com/abourget/gevent-socketio/blob/master/socketio/sgunicorn.py
     """
 
 

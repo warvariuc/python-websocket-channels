@@ -6,6 +6,7 @@ A chat server using WebSockets.
 import redis
 import gevent
 import flask
+from flask import request
 
 import flask_websockets
 
@@ -22,20 +23,24 @@ def hello():
     return flask.render_template('index.html')
 
 
-@app.route('/<channel>')
+@app.route('/<channel>', methods=('GET', 'POST'))
 def chat(channel):
-    return flask.render_template('room.html', channel=channel)
+    if request.method == 'GET':
+        return flask.render_template('room.html', channel=channel)
+    else:
+        message = request.get_data()
+        websockets.publish_message(message, channel)
+        return flask.Response("OK")
 
 
 @websockets.route('/<channel>')
 def channel(websocket, channel):
     """Receive chat messages the client wants to send to others.
-    The message is PUBLISHed so the SUBSCIRBEd clients can receive it.
+    The message is PUBLISHed so the SUBSCRRBEd clients can receive it.
     """
     websockets.subscribe_client(websocket, channel)
     while not websocket.closed:
         gevent.sleep(0.1)  # switch to send messages
-
         message = websocket.receive()
         if message:
             websockets.publish_message(message, channel)

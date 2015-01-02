@@ -17,3 +17,7 @@ workers.
 Running the server::
 
     gunicorn chat:app --config=gunicorn_settings.py
+
+You can send a message to a room using an HTTP POST request::
+
+    curl 'http://localhost:8000/test' -d '{"handle": "POST", "text": "Hi there!"}'
