@@ -75,7 +75,7 @@ class RedisPubSubBackend(object):
     """Interface for subscribing WebSocket clients to channels and publishing messages for them.
     https://github.com/andymccurdy/redis-py#publish--subscribe
     """
-    CHANNEL_PREFIX = 'websocket:'
+    REDIS_CHANNEL_PREFIX = 'websocket:'
 
     def __init__(self, redis_client, app):
         self.redis_client = redis_client
@@ -111,14 +111,14 @@ class RedisPubSubBackend(object):
     @async
     def publish_message(self, message, channel):
         self.app.logger.info(u'Pusblishing message to channel %s: %s', channel, message)
-        self.redis_client.publish(self.CHANNEL_PREFIX + channel, message)
+        self.redis_client.publish(self.REDIS_CHANNEL_PREFIX + channel, message)
 
     @async
     def run(self):
         """Listen for new messages in Redis, and send them to clients.
         """
-        self.pubsub.psubscribe(self.CHANNEL_PREFIX + '*')  # listen to all channels
-        channel_prefix_len = len(self.CHANNEL_PREFIX)
+        self.pubsub.psubscribe(self.REDIS_CHANNEL_PREFIX + '*')  # listen to all channels
+        channel_prefix_len = len(self.REDIS_CHANNEL_PREFIX)
         while True:
             message = self.pubsub.get_message() if self.pubsub.subscribed else None
             if not message:
