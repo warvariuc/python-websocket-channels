@@ -1,6 +1,6 @@
 # https://github.com/benoitc/gunicorn/blob/master/examples/example_config.py
 
-bind = '127.0.0.1:8000'
+bind = '127.0.0.1:5000'
 
 worker_class = 'flask_websockets.Worker'
 workers = 1  # number of worker process for handling requests

@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Python Websockets Chat Demo</title>
+    <title>Chat Room '{{ channel }}'</title>
   </head>
   <body>
     <a href="/">Home</a>
-    <h1>Welcome to room "{{ channel }}"</h1>
+    <h1>Welcome to room '{{ channel }}'</h1>
     <form id="input-form">
       <input id="input-handle" type="text" placeholder="Enter your name" autofocus />
       <input id="input-text" type="text" placeholder="Enter chat text here!" autofocus />
@@ -15,7 +15,8 @@
     <div id="chat-text"></div>
 
     <script type="text/javascript" src="//code.jquery.com/jquery-2.0.3.min.js"></script>
-    <script type="text/javascript" src="static/reconnecting-websocket.js"></script>
+    <!-- WARNING: in production copy and use https://github.com/joewalnes/reconnecting-websocket -->
+    <script type="text/javascript" src="//rawgit.com/joewalnes/reconnecting-websocket/master/reconnecting-websocket.js"></script>
     <script type="text/javascript">
 
 var socket = new ReconnectingWebSocket("ws://"+ location.host + "/{{ channel }}");
@@ -23,12 +24,6 @@ var socket = new ReconnectingWebSocket("ws://"+ location.host + "/{{ channel }}"
 socket.onmessage = function(message) {
     var data = JSON.parse(message.data);
     $("#chat-text").append("<div>" + data.handle + ": " + data.text + "</div>");
-};
-
-socket.onclose = function(){
-    console.log('socket connection closed');
-    this.socket = new WebSocket(socket.url);
-
 };
 
 $("#input-form").on("submit", function(event) {

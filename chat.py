@@ -35,8 +35,8 @@ def chat(channel):
 
 @websockets.route('/<channel>')
 def channel(websocket, channel):
-    """Receive chat messages the client wants to send to others.
-    The message is PUBLISHed so the SUBSCRRBEd clients can receive it.
+    """Receive chat messages the client wants to publish.
+    Each message is PUBLISHed so the SUBSCRRBEd clients can be sent it.
     """
     websockets.subscribe_client(websocket, channel)
     while not websocket.closed:
