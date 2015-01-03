@@ -9,7 +9,9 @@ The middleware allows URLs to include variable parts.
 
 The server uses `Redis Pub/Sub subsystem <https://github.com/andymccurdy/redis-py#publish--subscribe>`_
 to ensure that all connected clients recieve the message, even if there are several Gunicorn
-workers/machines::
+workers/machines:
+
+.. code:: bash
 
     $ gunicorn chat:app --config=gunicorn_settings.py --workers=2 --worker-connections=2
 
@@ -23,17 +25,23 @@ workers/machines::
     2015-01-03 11:09:08 [30653] [INFO] Sending message to clients on channel chat: {"handle":"","text":"test"}
 
 
-Running the server::
+Running the server:
+
+.. code:: bash
 
     $ gunicorn chat:app --config=gunicorn_settings.py
 
-You can send a message to a room using an HTTP POST request::
+You can send a message to a room using an HTTP POST request:
+
+.. code:: bash
 
     $ curl 'http://127.0.0.1:5000/test' -d '{"handle": "POST", "text": "Hi there!"}'
 
 
-Sample Nginx conf::
+Sample Nginx conf:
 
+.. code:: nginx
+    
     upstream websocket {
         server 127.0.0.1:5000;
     }
@@ -50,7 +58,9 @@ Sample Nginx conf::
     }
 
 
-Then in Chrome Console you could do something like::
+Then in Chrome Console you could do something like:
+
+.. code:: javascript
 
     > $.getScript('//rawgit.com/joewalnes/reconnecting-websocket/master/reconnecting-websocket.js');
     < Object {readyState: 1, getResponseHeader: function, getAllResponseHeaders: function, setRequestHeader: function, overrideMimeType: function…}
@@ -60,7 +70,9 @@ Then in Chrome Console you could do something like::
     < function (message) { console.log(message.data); }
 
 
-And send a message to the browser::
+And send a message to the browser:
+
+.. code:: bash
 
     $ curl 'http://localhost:5000/channel' -d '{"text": "Hi there!"}'
 
