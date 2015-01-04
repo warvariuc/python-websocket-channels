@@ -13,7 +13,7 @@ workers/machines:
 
 .. code:: bash
 
-    $ gunicorn chat:app --config=gunicorn_settings.py --workers=2 --worker-connections=2
+    $ gunicorn chat:websockets --config=gunicorn_settings.py --workers=2 --worker-connections=2
 
     2015-01-03 11:09:03 [30648] [INFO] Starting gunicorn 19.1.1
     2015-01-03 11:09:03 [30648] [INFO] Listening at: http://127.0.0.1:5000 (30648)
@@ -29,7 +29,7 @@ Running the server:
 
 .. code:: bash
 
-    $ gunicorn chat:app --config=gunicorn_settings.py
+    $ gunicorn chat:websockets --config=gunicorn_settings.py
 
 You can send a message to a room using an HTTP POST request:
 

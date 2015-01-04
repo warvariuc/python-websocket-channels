@@ -1,7 +1,7 @@
 """
 A chat server using WebSockets.
 
-    gunicorn chat:app --config=gunicorn_settings.py
+    gunicorn chat:websockets --config=gunicorn_settings.py
 """
 import redis
 import gevent

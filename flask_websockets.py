@@ -35,8 +35,6 @@ class WebSocketMiddleware(object):
 
     def __init__(self, app, redis_client):
         self.app = app
-        self.wsgi_app = app.wsgi_app
-        app.wsgi_app = self  # inject middleware
         self.url_map = Map()
         self.view_functions = {}
         self.redis_client = redis_client
@@ -46,11 +44,9 @@ class WebSocketMiddleware(object):
 
     def route(self, rule):
 
-        methods = set(('GET',))  # web-socket endpoints support only GET method
-
         def decorator(view_func):
             endpoint = view_func.__name__
-            _rule = Rule(rule, methods=methods, endpoint=endpoint)
+            _rule = Rule(rule, endpoint=endpoint)
             self.url_map.add(_rule)
             self.view_functions[endpoint] = view_func
             return view_func
@@ -70,7 +66,7 @@ class WebSocketMiddleware(object):
             view_func = self.view_functions[endpoint]
             view_func(websocket, **view_args)
         else:
-            return self.wsgi_app(environ, start_response)
+            return self.app(environ, start_response)
 
     @async
     def subscribe_client(self, websocket, channel):
