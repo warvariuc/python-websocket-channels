@@ -7,8 +7,8 @@
     <a href="/">Home</a>
     <h1>Welcome to room '{{ channel }}'</h1>
     <form id="input-form">
-      <input id="input-handle" type="text" placeholder="Enter your name" autofocus />
-      <input id="input-text" type="text" placeholder="Enter chat text here!" autofocus />
+      <input id="input-handle" type="text" placeholder="Enter your name" autofocus disabled />
+      <input id="input-text" type="text" placeholder="Enter chat text here!" autofocus disabled />
       <button type="submit">Send</button>
     </form>
     <h1>Chat Log</h1>
@@ -18,22 +18,27 @@
     <!-- WARNING: in production copy and use https://github.com/joewalnes/reconnecting-websocket -->
     <script type="text/javascript" src="//rawgit.com/joewalnes/reconnecting-websocket/master/reconnecting-websocket.js"></script>
     <script type="text/javascript">
+$( document ).ready(function() {
 
-var socket = new ReconnectingWebSocket("ws://"+ location.host + "/{{ channel }}");
+    var socket = new ReconnectingWebSocket("ws://"+ location.host + "/{{ channel }}");
 
-socket.onmessage = function(message) {
-    var data = JSON.parse(message.data);
-    $("#chat-text").append("<div>" + data.handle + ": " + data.text + "</div>");
-};
+    socket.onmessage = function(message) {
+        var data = JSON.parse(message.data);
+        $("#chat-text").append("<div>" + data.handle + ": " + data.text + "</div>");
+    };
 
-$("#input-form").on("submit", function(event) {
-    event.preventDefault();
-    var handle = $("#input-handle").val();
-    var text   = $("#input-text").val();
-    socket.send(JSON.stringify({ handle: handle, text: text }));
-    $("#input-text").val("");
+    $("#input-form").on("submit", function(event) {
+        event.preventDefault();
+        var handle = $("#input-handle").val();
+        var text   = $("#input-text").val();
+        socket.send(JSON.stringify({ handle: handle, text: text }));
+        $("#input-text").val("");
+    });
+
+    $("#input-handle").prop('disabled', false);
+    $("#input-text").prop('disabled', false);
+
 });
-
     </script>
   </body>
 </html>

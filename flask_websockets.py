@@ -5,6 +5,7 @@ https://devcenter.heroku.com/articles/python-websockets
 from collections import defaultdict
 import functools
 
+import redis
 import gevent
 import geventwebsocket.gunicorn.workers
 
@@ -33,12 +34,12 @@ class WebSocketMiddleware(object):
     """
     REDIS_CHANNEL_PREFIX = 'websocket:'
 
-    def __init__(self, app, redis_client):
+    def __init__(self, app, redis_url):
         self.app = app
         self.url_map = Map()
         self.view_functions = {}
-        self.redis_client = redis_client
-        self.pubsub = redis_client.pubsub(ignore_subscribe_messages=True)
+        self.redis_client = redis.from_url(redis_url)
+        self.pubsub = self.redis_client.pubsub(ignore_subscribe_messages=True)
         self.sockets = defaultdict(set)  # {channel: set([websocket, ...]), ...}
         self._listen()
 
@@ -69,42 +70,49 @@ class WebSocketMiddleware(object):
             return self.app(environ, start_response)
 
     @async
-    def subscribe_client(self, websocket, channel):
-        """Asynchronosuly subscribe a client to published messages.
+    def register_websocket(self, websocket, channel):
+        """Asynchronously register a web-socket so it can be sent published messages.
 
         Args:
-            websocket (WebSocket): client websocket
-            channel (str): from which channel
+            websocket (WebSocket): websocket
+            channel (str): on which channel
         """
         self.sockets[channel].add(websocket)
 
     @async
     def publish_message(self, message, channel):
+        """Asynchronously PUBLISH a message to the given Redis channel. SUBSCRIBEd Redis clients
+        will be notified about it.
+
+        Args:
+            message (str): message to publish
+            channel (str): on which channel
+        """
         self.app.logger.info(u'Pusblishing message to channel %s: %s', channel, message)
         self.redis_client.publish(self.REDIS_CHANNEL_PREFIX + channel, message)
 
     @async
     def _listen(self):
-        """Listen for new messages in Redis, and send them to clients.
-        https://github.com/andymccurdy/redis-py#publish--subscribe
+        """Listen in a thread for new messages in Redis, and send them to registered web-sockets.
+        See: https://github.com/andymccurdy/redis-py#publish--subscribe
         """
         self.pubsub.psubscribe(self.REDIS_CHANNEL_PREFIX + '*')  # listen to all channels
         channel_prefix_len = len(self.REDIS_CHANNEL_PREFIX)
         while True:
             message = self.pubsub.get_message() if self.pubsub.subscribed else None
             if not message:
-                gevent.sleep(0.01)  # be nice to the system
+                gevent.sleep(0.05)  # be nice to the system
                 continue
             _message = message['data']
             channel = message['channel'][channel_prefix_len:]
             self.app.logger.info(u'Sending message to clients on channel %s: %s',
                                  channel, _message)
             for websocket in self.sockets[channel]:
-                self._send_message(websocket, _message, channel)
+                self._send_websocket_message(websocket, _message, channel)
 
     @async
-    def _send_message(self, websocket, message, channel):
-        """Asynchronosuly send a message to a websocket client.
+    def _send_websocket_message(self, websocket, message, channel):
+        """Asynchronously send a message to the given websocket.
         Automatically discard invalid connections.
 
         Args:
