@@ -15,7 +15,7 @@ REDIS_URL = 'redis://127.0.0.1:6379/0'
 redis_client = redis.from_url(REDIS_URL)
 
 app = flask.Flask(__name__)
-websockets = flask_websockets.create_websockets_app(app, redis_client)
+websockets = flask_websockets.WebSocketMiddleware(app, redis_client)
 
 
 @app.route('/')
