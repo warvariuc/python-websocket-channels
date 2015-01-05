@@ -5,7 +5,7 @@ This is a simple Websockets server written in Python using Flask + gevent-websoc
 
 Inspiderd by https://devcenter.heroku.com/articles/python-websockets and https://github.com/kennethreitz/flask-sockets
 
-The middleware allows URLs to include variable parts.
+The middleware is not Flask specific, it can be used around any WSGI application.
 
 The server uses `Redis Pub/Sub subsystem <https://github.com/andymccurdy/redis-py#publish--subscribe>`_
 to ensure that all connected clients recieve the message, even if there are several Gunicorn
@@ -31,11 +31,19 @@ Running the server:
 
     $ gunicorn chat:websockets --config=gunicorn_settings.py
 
-You can send a message to a room using an HTTP POST request:
+
+You can send a message to a room (visit http://127.0.0.1:5000/users/1 ) using an HTTP POST request:
 
 .. code:: bash
 
-    $ curl 'http://127.0.0.1:5000/test' -d '{"handle": "POST", "text": "Hi there!"}'
+    $ curl 'http://127.0.0.1:5000/users/1' -d '{"text": "Hi there!"}'
+
+
+You can send a message to all sub-rooms using trailing slash:
+
+.. code:: bash
+
+    $ curl 'http://127.0.0.1:5000/users/' -d '{"text": "Hi there!"}'
 
 
 Sample Nginx conf:

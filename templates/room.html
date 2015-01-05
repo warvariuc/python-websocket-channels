@@ -24,6 +24,7 @@ $( document ).ready(function() {
 
     socket.onmessage = function(message) {
         var data = JSON.parse(message.data);
+        console.log(data);
         $("#chat-text").append("<div>" + data.text + "</div>");
     };
 

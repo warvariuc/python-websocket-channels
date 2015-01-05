@@ -23,7 +23,7 @@ def hello():
 @app.route('/<path:channel>', methods=('GET', 'POST'))
 def chat(channel):
     if request.method == 'GET':
-        return flask.render_template('room.html', channel=channel)
+        return flask.render_template('room.html', channel=channel.rstrip('/'))
     else:
         message = request.get_data()
         websockets.publish_message(message, channel)
