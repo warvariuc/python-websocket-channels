@@ -9,9 +9,6 @@ import redis
 import gevent
 import geventwebsocket.gunicorn.workers
 
-from werkzeug.routing import Map, Rule
-from werkzeug.exceptions import HTTPException
-
 
 class Worker(geventwebsocket.gunicorn.workers.GeventWebSocketWorker):
     """The worker used here.
@@ -36,48 +33,44 @@ class WebSocketMiddleware(object):
 
     def __init__(self, app, redis_url):
         self.app = app
-        self.url_map = Map()
-        self.view_functions = {}
         self.redis_client = redis.from_url(redis_url)
         self.pubsub = self.redis_client.pubsub(ignore_subscribe_messages=True)
         self.sockets = defaultdict(set)  # {channel: set([websocket, ...]), ...}
         self._listen()
 
-    def route(self, rule):
-
-        def decorator(view_func):
-            endpoint = view_func.__name__
-            _rule = Rule(rule, endpoint=endpoint)
-            self.url_map.add(_rule)
-            self.view_functions[endpoint] = view_func
-            return view_func
-
-        return decorator
-
     def __call__(self, environ, start_response):
         websocket = environ.get('wsgi.websocket')
         if websocket is not None:
-            url_adapter = self.url_map.bind_to_environ(environ)
-            try:
-                endpoint, view_args = url_adapter.match()
-            except HTTPException as exc:
-                websocket.close()  # it would be good to not accept connection at all
-                return exc(environ, start_response)
-
-            view_func = self.view_functions[endpoint]
-            view_func(websocket, **view_args)
-        else:
+            channel = environ['PATH_INFO'].lstrip('/')
+            self._handle_websocket_connection(websocket, channel)
+        else:  # call the wrapped app
             return self.app(environ, start_response)
 
-    @async
-    def register_websocket(self, websocket, channel):
-        """Asynchronously register a web-socket so it can be sent published messages.
-
-        Args:
-            websocket (WebSocket): websocket
-            channel (str): on which channel
+    def _register_websocket(self, websocket, channel):
+        """Register a web-socket so it can be sent published messages.
         """
         self.sockets[channel].add(websocket)
+
+    def _handle_websocket_connection(self, websocket, channel):
+        """Receive messages the web-socket.
+        """
+        self._register_websocket(websocket, channel)
+        while not websocket.closed:
+            gevent.sleep(0.05)  # switch to send messages
+            message = websocket.receive()
+            if message:
+                self.on_message(message, channel)
+
+    def on_message(self, message, channel):
+        """Hook called when a new message from a client via websocket arrives.
+        The default implementation publishes the message. You can subclass this to apply custom
+        logic (e.g filtering).
+
+        Args:
+            message (str): message to publish
+            channel (str): on which channel
+        """
+        self.publish_message(message, channel)
 
     @async
     def publish_message(self, message, channel):
@@ -103,24 +96,18 @@ class WebSocketMiddleware(object):
             if not message:
                 gevent.sleep(0.05)  # be nice to the system
                 continue
-            _message = message['data']
             channel = message['channel'][channel_prefix_len:]
-            self.app.logger.info(u'Sending message to clients on channel %s: %s',
-                                 channel, _message)
-            for websocket in self.sockets[channel]:
-                self._send_websocket_message(websocket, _message, channel)
+            self._send_message(channel, message['data'])
 
     @async
-    def _send_websocket_message(self, websocket, message, channel):
-        """Asynchronously send a message to the given websocket.
-        Automatically discard invalid connections.
-
-        Args:
-            websocket (WebSocket): client websocket
-            message (str): message to send
-            channel (str): from which channel
+    def _send_message(self, channel, message):
+        """Asynchronously send a message to websockets handled by this worker on the given channel.
         """
-        try:
-            websocket.send(message)
-        except geventwebsocket.WebSocketError:
-            self.sockets[channel].remove(websocket)
+        self.app.logger.info(u'Sending message to clients on channel %s: %s', channel, message)
+        websockets = self.sockets[channel]
+        for websocket in tuple(websockets):  # changes during iteration
+            try:
+                websocket.send(message)
+            except geventwebsocket.WebSocketError:
+                # discard invalid connection
+                websockets.remove(websocket)

@@ -3,7 +3,7 @@ WebSockets chat in Python
 
 This is a simple Websockets server written in Python using Flask + gevent-websocket.
 
-The idea was taken from https://devcenter.heroku.com/articles/python-websockets
+Inspiderd by https://devcenter.heroku.com/articles/python-websockets and https://github.com/kennethreitz/flask-sockets
 
 The middleware allows URLs to include variable parts.
 
