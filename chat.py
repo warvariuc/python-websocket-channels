@@ -3,6 +3,8 @@ A chat server using WebSockets.
 
     gunicorn chat:websockets --config=gunicorn_settings.py
 """
+import json
+
 import flask
 
 import websocket_channels
@@ -19,15 +21,17 @@ def home_view():
     return flask.render_template('home.html')
 
 
-@app.route('/<path:channel>', methods=('GET', 'POST'))
+@app.route('/channel/<path:channel>')
 def channel_view(channel):
-    if flask.request.method == 'GET':
-        return flask.render_template('channel.html', channel=channel.rstrip('/'))
-    else:
-        message = flask.request.get_data()
+    return flask.render_template('channel.html', channel=channel.rstrip('/'))
+
+
+@app.route('/publish', methods=('POST',))
+def publish_messages_view():
+    """Publish given messages on the given channels. The POST body should be in form of
+    {channel: message, ...}
+    """
+    data = json.loads(flask.request.get_data())
+    for channel, message in data.iteritems():
         websockets.publish_message(message, channel)
-        if channel.endswith('/'):
-            response = u'Sending message to clients on sub-channels of %s: %s' % (channel, message)
-        else:
-            response = u'Sending message to clients on channel %s: %s' % (channel, message)
-        return flask.Response(response)
+    return flask.Response('OK')

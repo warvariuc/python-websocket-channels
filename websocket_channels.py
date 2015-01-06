@@ -107,7 +107,7 @@ class WebSocketMiddleware(object):
             message (str): message to publish
             channel (str): on which channel
         """
-        self.app.logger.info(u'Pusblishing message to channel %s: %s', channel, message)
+        self.app.logger.info(u'Pusblishing message on channel `%s`: %s', channel, message)
         self.redis_client.publish(self.REDIS_CHANNEL_PREFIX + channel, message)
 
     @async
@@ -131,10 +131,11 @@ class WebSocketMiddleware(object):
         """
         only_subchannels = channel.endswith('/')
         if only_subchannels:
-            self.app.logger.info(u'Sending message to clients on sub-channels of %s: %s',
+            self.app.logger.info(u'Sending message to clients on sub-channels of `%s`: %s',
                                  channel, message)
         else:
-            self.app.logger.info(u'Sending message to clients on channel %s: %s', channel, message)
+            self.app.logger.info(u'Sending message to clients on channel `%s`: %s',
+                                 channel, message)
         channel_sockets = self.channel_sockets
         for channel in channel.split('/'):
             if channel:

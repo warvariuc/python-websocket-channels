@@ -4,17 +4,17 @@
     <title>WebSockets Chat</title>
   </head>
   <body>
-    <h1>Python WebSockets Chat</h1>
+    <h1>Python WebSockets Channels</h1>
     <form id="input-form">
-      <input id="input-channel" type="text" placeholder="Enter room name" autofocus />
-      <button type="submit">Join</button>
+      <input id="input-channel" type="text" placeholder="Enter channel name" autofocus />
+      <button type="submit">Connect</button>
     </form>
     <script type="text/javascript" src="//code.jquery.com/jquery-2.0.3.min.js"></script>
     <script type="text/javascript">
 $("#input-form").on("submit", function(event) {
     event.preventDefault();
     var channel = $("#input-channel").val();
-    var url = '//' + location.host + '/' + channel;
+    var url = '//' + location.host + '/channel/' + channel;
     window.location.href = url;
 });
     </script>

@@ -32,18 +32,19 @@ Running the server:
     $ gunicorn chat:websockets --config=gunicorn_settings.py
 
 
-You can send a message to a room (visit http://127.0.0.1:5000/users/1 ) using an HTTP POST request:
+You can send a message to a channel (after visiting http://127.0.0.1:5000/channel/users/1 ) using
+an HTTP POST request:
 
 .. code:: bash
 
-    $ curl 'http://127.0.0.1:5000/users/1' -d 'Hi there!'
+    $ curl 'http://localhost:5000/publish' -d '{"users/1": "Hi user 1!"}'
 
 
-You can send a message to all sub-rooms using trailing slash:
+You can send a message to all sub-channels using trailing slash:
 
 .. code:: bash
 
-    $ curl 'http://127.0.0.1:5000/users/' -d 'Hi there!'
+    $ curl 'http://localhost:5000/publish' -d '{"users/": "Hi to all users!"}'
 
 
 Sample Nginx conf:
