@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Chat Room '{{ channel }}'</title>
+    <title>Channel '{{ channel }}'</title>
   </head>
   <body>
     <a href="/">Home</a>
-    <h2>Welcome to room '{{ channel }}'</h2>
+    <h2>Channel '{{ channel }}'</h2>
     <form id="input-form">
-      <input id="input-text" type="text" placeholder="Enter your message here" disabled />
-      <button type="submit">Send</button>
+      <input id="input-message" type="text" placeholder="Enter your message here" disabled />
+      <button type="submit">Send</button>`
     </form>
 
-    <h2>Chat Log</h2>
-    <div id="chat-text"></div>
+    <h3>Received messages:</h3>
+    <div id="received-messages"></div>
 
     <script type="text/javascript" src="//code.jquery.com/jquery-2.0.3.min.js"></script>
     <!-- WARNING: in production copy and use https://github.com/joewalnes/reconnecting-websocket -->
@@ -21,21 +21,16 @@
 $( document ).ready(function() {
 
     var socket = new ReconnectingWebSocket("ws://" + location.host + "/{{ channel }}");
-
     socket.onmessage = function(message) {
-        var data = JSON.parse(message.data);
-        console.log(data);
-        $("#chat-text").append("<div>" + data.text + "</div>");
+        $("#received-messages").append("<div>" + message.data + "</div>");
     };
-
     $("#input-form").on("submit", function(event) {
         event.preventDefault();
-        var text   = $("#input-text").val();
-        socket.send(JSON.stringify({text: text}));
-        $("#input-text").val("");
+        var text = $("#input-message").val();
+        socket.send(text);
+        $("#input-message").val("");
     });
-
-    $("#input-text").prop('disabled', false).focus();
+    $("#input-message").prop('disabled', false).focus();
 
 });
     </script>

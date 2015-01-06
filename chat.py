@@ -4,27 +4,30 @@ A chat server using WebSockets.
     gunicorn chat:websockets --config=gunicorn_settings.py
 """
 import flask
-from flask import request
 
-import flask_websockets
+import websocket_channels
 
 
 REDIS_URL = 'redis://127.0.0.1:6379/0'
 
 app = flask.Flask(__name__)
-websockets = flask_websockets.WebSocketMiddleware(app, REDIS_URL)
+websockets = websocket_channels.WebSocketMiddleware(app, REDIS_URL)
 
 
 @app.route('/')
-def hello():
-    return flask.render_template('index.html')
+def home_view():
+    return flask.render_template('home.html')
 
 
 @app.route('/<path:channel>', methods=('GET', 'POST'))
-def chat(channel):
-    if request.method == 'GET':
-        return flask.render_template('room.html', channel=channel.rstrip('/'))
+def channel_view(channel):
+    if flask.request.method == 'GET':
+        return flask.render_template('channel.html', channel=channel.rstrip('/'))
     else:
-        message = request.get_data()
+        message = flask.request.get_data()
         websockets.publish_message(message, channel)
-        return flask.Response("OK")
+        if channel.endswith('/'):
+            response = u'Sending message to clients on sub-channels of %s: %s' % (channel, message)
+        else:
+            response = u'Sending message to clients on channel %s: %s' % (channel, message)
+        return flask.Response(response)

@@ -1,9 +1,9 @@
-WebSockets chat in Python
-=========================
+WebSocket channels in Python
+============================
 
-This is a simple Websockets server written in Python using Flask + gevent-websocket.
+This is a simple WebSocket server written in Python using Flask + gevent-websocket.
 
-Inspiderd by https://devcenter.heroku.com/articles/python-websockets and https://github.com/kennethreitz/flask-sockets
+Inspired by https://devcenter.heroku.com/articles/python-websockets and https://github.com/kennethreitz/flask-sockets
 
 The middleware is not Flask specific, it can be used around any WSGI application.
 
@@ -17,7 +17,7 @@ workers/machines:
 
     2015-01-03 11:09:03 [30648] [INFO] Starting gunicorn 19.1.1
     2015-01-03 11:09:03 [30648] [INFO] Listening at: http://127.0.0.1:5000 (30648)
-    2015-01-03 11:09:03 [30648] [INFO] Using worker: flask_websockets.Worker
+    2015-01-03 11:09:03 [30648] [INFO] Using worker: websocket_channels.Worker
     2015-01-03 11:09:03 [30653] [INFO] Booting worker with pid: 30653
     2015-01-03 11:09:03 [30654] [INFO] Booting worker with pid: 30654
     2015-01-03 11:09:08 [30653] [INFO] Pusblishing message to channel chat: {"handle":"","text":"test"}
@@ -36,14 +36,14 @@ You can send a message to a room (visit http://127.0.0.1:5000/users/1 ) using an
 
 .. code:: bash
 
-    $ curl 'http://127.0.0.1:5000/users/1' -d '{"text": "Hi there!"}'
+    $ curl 'http://127.0.0.1:5000/users/1' -d 'Hi there!'
 
 
 You can send a message to all sub-rooms using trailing slash:
 
 .. code:: bash
 
-    $ curl 'http://127.0.0.1:5000/users/' -d '{"text": "Hi there!"}'
+    $ curl 'http://127.0.0.1:5000/users/' -d 'Hi there!'
 
 
 Sample Nginx conf:

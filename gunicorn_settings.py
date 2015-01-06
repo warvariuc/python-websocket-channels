@@ -1,7 +1,7 @@
 # https://github.com/benoitc/gunicorn/blob/master/examples/example_config.py
 
 bind = '127.0.0.1:5000'
-worker_class = 'flask_websockets.Worker'
+worker_class = 'websocket_channels.Worker'
 workers = 1  # number of worker process for handling requests
 worker_connections = 1000  # maximum number of simultaneous clients
 logconfig = 'logging.conf'
