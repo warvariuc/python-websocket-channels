@@ -3,22 +3,26 @@ Based on Flask-Sockets (https://github.com/kennethreitz/flask-sockets) and
 https://devcenter.heroku.com/articles/python-websockets
 """
 import functools
+import logging
 
 import redis
 import gevent
 import geventwebsocket.gunicorn.workers
 
 
+logger = logging.getLogger(__name__)
+
+
 class Worker(geventwebsocket.gunicorn.workers.GeventWebSocketWorker):
     """The worker used here.
     """
-    # TODO: It would be nice to hook on WebSocket connection handshake to be able to refuse
+    # TODO: It would be nice to hook on WebSocket connection handshake to be able to reject
     # TODO: undesired connections
     # TODO: https://github.com/abourget/gevent-socketio/blob/master/socketio/sgunicorn.py
 
 
 def async(func):
-    """Decorator to make a function to be executed asynchronously.
+    """Decorator to make a function to be executed asynchronously using a Greenlet.
     """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -40,7 +44,7 @@ class ChannelSockets(object):
         """
         channel = self._subchannels.get(name)
         if channel is None:
-            channel = ChannelSockets(self.name + '/' + name)
+            channel = self.__class__(self.name + '/' + name)
             self._subchannels[name] = channel
         return channel
 
@@ -48,14 +52,14 @@ class ChannelSockets(object):
         return self._subchannels.itervalues()
 
 
-class WebSocketMiddleware(object):
-    """WSGI middleware around a Flask application which expects `wsgi.websocket` value provided by
-    a Gunicorn worker and handles that socket.
+class WebSocketChannelMiddleware(object):
+    """WSGI middleware around a WSGI application which expects `wsgi.websocket` request
+    environment value provided by a Gunicorn worker and handles that websocket.
     """
     REDIS_CHANNEL_PREFIX = 'websocket:'
 
-    def __init__(self, app, redis_url):
-        self.app = app
+    def __init__(self, wsgi_app, redis_url):
+        self.wsgi_app = wsgi_app
         self.redis_client = redis.from_url(redis_url)
         self.pubsub = self.redis_client.pubsub(ignore_subscribe_messages=True)
         self.channel_sockets = ChannelSockets('')
@@ -67,10 +71,10 @@ class WebSocketMiddleware(object):
             channel = environ['PATH_INFO'].strip('/')
             self._handle_websocket_connection(websocket, channel)
         else:  # call the wrapped app
-            return self.app(environ, start_response)
+            return self.wsgi_app(environ, start_response)
 
     def _handle_websocket_connection(self, websocket, channel):
-        """Receive messages the web-socket.
+        """Receive messages a websocket.
         """
         self._register_websocket(websocket, channel)
         while not websocket.closed:
@@ -80,7 +84,7 @@ class WebSocketMiddleware(object):
                 self.on_message(message, channel)
 
     def _register_websocket(self, websocket, channel):
-        """Register a web-socket so it can be sent published messages.
+        """Register a websocket so it can be sent published messages.
         """
         sockets = self.channel_sockets
         for channel in channel.split('/'):
@@ -107,7 +111,7 @@ class WebSocketMiddleware(object):
             message (str): message to publish
             channel (str): on which channel
         """
-        self.app.logger.info(u'Pusblishing message on channel `%s`: %s', channel, message)
+        logger.info(u'Pusblishing message on channel `%s`: %s', channel, message)
         self.redis_client.publish(self.REDIS_CHANNEL_PREFIX + channel, message)
 
     @async
@@ -123,6 +127,7 @@ class WebSocketMiddleware(object):
                 gevent.sleep(0.05)  # be nice to the system
                 continue
             channel = message['channel'][channel_prefix_len:]
+            logger.debug(u'Received a message on channel `%s`: %s', channel, message)
             self._send_message(channel, message['data'])
 
     @async
@@ -131,11 +136,10 @@ class WebSocketMiddleware(object):
         """
         only_subchannels = channel.endswith('/')
         if only_subchannels:
-            self.app.logger.info(u'Sending message to clients on sub-channels of `%s`: %s',
-                                 channel, message)
+            logger.info(u'Sending message to clients on sub-channels of `%s`: %s',
+                        channel, message)
         else:
-            self.app.logger.info(u'Sending message to clients on channel `%s`: %s',
-                                 channel, message)
+            logger.info(u'Sending message to clients on channel `%s`: %s', channel, message)
         channel_sockets = self.channel_sockets
         for channel in channel.split('/'):
             if channel:

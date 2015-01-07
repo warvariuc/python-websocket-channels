@@ -13,7 +13,7 @@ import websocket_channels
 REDIS_URL = 'redis://127.0.0.1:6379/0'
 
 app = flask.Flask(__name__)
-websockets = websocket_channels.WebSocketMiddleware(app, REDIS_URL)
+websockets = websocket_channels.WebSocketChannelMiddleware(app, REDIS_URL)
 
 
 @app.route('/')
