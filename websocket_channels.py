@@ -11,6 +11,7 @@ import geventwebsocket.gunicorn.workers
 
 
 logger = logging.getLogger(__name__)
+logger.setLevel('WARNING')
 
 
 class Worker(geventwebsocket.gunicorn.workers.GeventWebSocketWorker):
@@ -74,12 +75,15 @@ class WebSocketChannelMiddleware(object):
             return self.wsgi_app(environ, start_response)
 
     def _handle_websocket_connection(self, websocket, channel):
-        """Receive messages a websocket.
+        """Receive messages from a websocket.
         """
         self._register_websocket(websocket, channel)
-        while not websocket.closed:
+        while True:
             gevent.sleep(0.05)  # switch to send messages
-            message = websocket.receive()
+            try:
+                message = websocket.receive()
+            except geventwebsocket.WebSocketError:
+                break
             if message:
                 self.on_message(message, channel)
 
@@ -155,6 +159,10 @@ class WebSocketChannelMiddleware(object):
         """
         websockets = channel_sockets.websockets
         for websocket in tuple(websockets):  # changes during iteration
+            # import random
+            # if not random.randint(0, 10):
+            #     websocket.close()
+            #     continue
             try:
                 websocket.send(message)
             except geventwebsocket.WebSocketError:
