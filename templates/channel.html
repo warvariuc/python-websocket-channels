@@ -20,7 +20,7 @@
     <script type="text/javascript">
 $( document ).ready(function() {
 
-    var socket = new ReconnectingWebSocket("ws://" + location.host + "/{{ channel }}");
+    var socket = new ReconnectingWebSocket("ws://" + location.host + "/ws/{{ channel }}");
     socket.onmessage = function(message) {
         $("#received-messages").append("<div>" + message.data + "</div>");
     };

@@ -1,39 +1,45 @@
+from gevent import monkey; monkey.patch_all()
+
+import argparse
 import time
-
+import gevent
 from ws4py.client import WebSocketBaseClient
-from ws4py.manager import WebSocketManager
-from ws4py import format_addresses, configure_logger
+from ws4py import configure_logger
 
 
-# TODO: test with ws4py echoserver and compare the results
 logger = configure_logger(level='WARNING')
-
-manager = WebSocketManager()
 
 stats = {}
 # TODO: check that other clients from the same channel received the message
 
 
-class EchoClient(WebSocketBaseClient):
+class WebSocketClient(WebSocketBaseClient):
 
-    def __init__(self, client_id, *args, **kwargs):
+    def __init__(self, client_id, url, *args, **kwargs):
         self.client_id = client_id
         self.stats = stats.setdefault(self.client_id, {})
-        super(EchoClient, self).__init__(*args, **kwargs)
+        self.errors = self.stats.setdefault('errors', {})
+        self.message_count = 0
+        super(WebSocketClient, self).__init__(url, *args, **kwargs)
+
+    def get_new_message(self):
+        self.message_count += 1
+        return 'Message #{:<3} from client #{:<5}'.format(self.message_count, self.client_id)
 
     def connect(self):
         self.stats['connection_started_at'] = time.time()
-        return super(EchoClient, self).connect()
+        return super(WebSocketClient, self).connect()
 
     def handshake_ok(self):
         self.stats['handshake_done_at'] = time.time()
         # logger.info("Opened #%s %s", self.client_id, format_addresses(self))
-        manager.add(self)
+        # time.sleep(random.random() * 1)
         self.stats['message_sent_at'] = time.time()
-        self.send('a message')
+        self.send(self.get_new_message())
+        self.stats['message_sent_at2'] = time.time()
 
     def received_message(self, msg):
-        self.stats['message_received_at'] = time.time()
+        self.stats['echo_message_received_at'] = time.time()
         self.close()
 
 
@@ -53,39 +59,55 @@ def calculate_stats(array):
     return {'min': _min, 'max': _max, 'avg': _sum / _count}
         
 
+CLIENT_COUNT = 2000
+WS_CHANNEL_URL = 'ws://127.0.0.1:5000/ws/client/{client_id}'
+
 if __name__ == '__main__':
 
-    try:
-        manager.start()
-        for i in xrange(2000):
-            client = EchoClient(i, 'ws://localhost:5000/client/%s' % i)
+    parser = argparse.ArgumentParser(description='WebSocket Channels test')
+    parser.add_argument('--clients', default=CLIENT_COUNT, type=int)
+    # parser.add_argument('-p', '--port', default=5000, type=int)
+    args = parser.parse_args()
+
+    threads = []
+    
+    for i in xrange(args.clients):
+        
+        def run_client(client_id):
+            client = WebSocketClient(client_id, WS_CHANNEL_URL.format(client_id=client_id))
             client.connect()
+            client.run()
+            
+        threads.append(gevent.Greenlet(run_client, i))
 
-        # TODO: do they connect sequencially? How to connect in parallel?
-        print "%d clients are connected" % (i + 1)
+    print "%d clients were created\n" % (i + 1)
 
-        while manager:
-            for ws in manager:
-                if not ws.terminated:
-                    break
-            time.sleep(3)
-    except KeyboardInterrupt:
-        manager.close_all()
-        manager.stop()
-        manager.join()
+    start_time = time.time()
+
+    for thread in threads:
+        thread.start()
+
+    gevent.joinall(threads)
+
+    print "Clients finished in {:.2f} sec.\n".format(time.time() - start_time)
 
     print """Handshake times (msec):
-Average: {avg:10.2f}
-    Min: {min:10.2f}
-    Max: {max:10.2f}
+  Average: {avg:10.2f}    Min: {min:10.2f}    Max: {max:10.2f}
 """.format(**calculate_stats(
         (_stats['handshake_done_at'] - _stats['connection_started_at']) * 1000 
         for _stats in stats.itervalues()))
 
     print """Echo response times (msec):
-Average: {avg:10.2f}
-    Min: {min:10.2f}
-    Max: {max:10.2f}
+  Average: {avg:10.2f}    Min: {min:10.2f}    Max: {max:10.2f}
 """.format(**calculate_stats(
-        (_stats['message_received_at'] - _stats['message_sent_at']) * 1000
+        (_stats['echo_message_received_at'] - _stats['message_sent_at']) * 1000
         for _stats in stats.itervalues()))
+
+    errors = {}
+    for _stats in stats.itervalues():
+        for error_code, error_count in _stats['errors'].iteritems():
+            errors[error_code] = errors.get(error_code, 0) + error_count
+    if errors:
+        print "Errors:"
+        for error_code, error_count in errors.iteritems():
+            print "  {}: {}".format(error_code, error_count)

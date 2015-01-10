@@ -67,9 +67,10 @@ class WebSocketChannelMiddleware(object):
         self._listen()
 
     def __call__(self, environ, start_response):
-        websocket = environ.get('wsgi.websocket')
-        if websocket is not None:
-            channel = environ['PATH_INFO'].strip('/')
+        path = environ['PATH_INFO']
+        if path.startswith('/ws/'):
+            channel = path[4:].rstrip('/')
+            websocket = environ['wsgi.websocket']
             self._handle_websocket_connection(websocket, channel)
         else:  # call the wrapped app
             return self.wsgi_app(environ, start_response)
