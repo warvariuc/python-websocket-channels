@@ -1,0 +1,6 @@
+Jinja2==2.7.3
+redis==2.10.3
+Werkzeug==0.9.6
+wsaccel==0.6.2
+ws4py==0.3.4
+gevent==1.0.1

@@ -27,7 +27,7 @@ class WebSocketClient(WebSocketBaseClient):
         return 'Message #{:<3} from client #{:<5}'.format(self.message_count, self.client_id)
 
     def connect(self):
-        self.stats['connection_started_at'] = time.time()
+        self.stats['handshake_started_at'] = time.time()
         return super(WebSocketClient, self).connect()
 
     def handshake_ok(self):
@@ -60,7 +60,7 @@ def calculate_stats(array):
         
 
 CLIENT_COUNT = 2000
-WS_CHANNEL_URL = 'ws://127.0.0.1:5000/ws/client/{client_id}'
+WS_CHANNEL_URL = 'ws://127.0.0.1:9000/ws/client/{client_id}'
 
 if __name__ == '__main__':
 
@@ -70,14 +70,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     threads = []
-    
+
     for i in xrange(args.clients):
-        
+
         def run_client(client_id):
             client = WebSocketClient(client_id, WS_CHANNEL_URL.format(client_id=client_id))
             client.connect()
             client.run()
-            
+
         threads.append(gevent.Greenlet(run_client, i))
 
     print "%d clients were created\n" % (i + 1)
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     print """Handshake times (msec):
   Average: {avg:10.2f}    Min: {min:10.2f}    Max: {max:10.2f}
 """.format(**calculate_stats(
-        (_stats['handshake_done_at'] - _stats['connection_started_at']) * 1000 
+        (_stats['handshake_done_at'] - _stats['handshake_started_at']) * 1000
         for _stats in stats.itervalues()))
 
     print """Echo response times (msec):
