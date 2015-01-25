@@ -1,6 +1,8 @@
 WebSocket channels in Python
 ============================
 
+`ws4py` version, which allows controlling the handshake.
+
 .. code:: bash
 
     $ ulimit -n 3000
