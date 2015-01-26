@@ -77,7 +77,7 @@ class WebSocket(ws4py.websocket.WebSocket):
     #                 pass
 
 
-BASE_DIR = os.path.abspath(os.path.dirname(__name__))
+BASE_DIR = os.path.abspath(os.path.dirname(__name__) + '/..')
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 
 
@@ -128,6 +128,10 @@ class WebSocketChannelApp(WebSocketWSGIApplication):
         environ['.app'] = self
         environ['.channel'] = channel
         return super(WebSocketChannelApp, self).__call__
+
+    def render_template(self, template_name, **context):
+        template = self.jinja_env.get_template(template_name)
+        return Response(template.render(context), mimetype='text/html')
 
     def __call__(self, environ, start_response):
         environ['ws4py.websocket'] = None  # to be removed -- in the newer ws4py it's not needed
@@ -219,10 +223,6 @@ class WebSocketChannelApp(WebSocketWSGIApplication):
         for channel_sockets in channel_sockets:
             self._send_message_channel(message, channel_sockets)
             self._send_message_subchannels(message, channel_sockets)
-
-    def render_template(self, template_name, **context):
-        template = self.jinja_env.get_template(template_name)
-        return Response(template.render(context), mimetype='text/html')
 
 
 try:
